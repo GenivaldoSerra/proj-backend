@@ -8,7 +8,12 @@
   "license": "ISC",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch index.js"
+    "dev": "node --watch index.js",
+
+    "db:new": "dbmate new",
+    "db:migrate": "dbmate --wait up",
+    "db:rollback": "dbmate rollback",
+    "db:status": "dbmate status"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
