@@ -8,16 +8,22 @@ const server = http.createServer(router);
 
 async function start() {
     try {
+        console.log("🔄 Validando conexão com o banco de dados...");
+
         await pool.query("SELECT NOW()");
-        console.log("✅ Banco conectado.");
+
+        console.log("✅ Banco de dados conectado.");
 
         server.listen(PORT, () => {
             console.log(`🚀 Servidor iniciado na porta ${PORT}`);
         });
 
     } catch (error) {
-        console.error("❌ Erro ao iniciar a aplicação:");
-        console.error(error.message);
+        console.error("❌ Falha ao iniciar a aplicação.");
+        console.error(`Motivo: ${error.message}`);
+
+        await pool.end().catch(() => {});
+
         process.exit(1);
     }
 }
