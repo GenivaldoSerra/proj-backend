@@ -13,7 +13,9 @@
     "db:new": "dbmate new",
     "db:migrate": "dbmate --wait up",
     "db:rollback": "dbmate rollback",
-    "db:status": "dbmate status"
+    "db:status": "dbmate status",
+
+    "db:seed": "node scripts/seed.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
