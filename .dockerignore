@@ -1,0 +1,31 @@
+# Dependências
+node_modules
+
+# Logs
+npm-debug.log
+*.log
+
+# Git
+.git
+.gitignore
+
+# Docker
+docker/
+
+# Documentação
+docs/
+
+# Ambiente
+.env
+.env.*
+
+# IDEs
+.vscode
+.idea
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos temporários
+coverage/
