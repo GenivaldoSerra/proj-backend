@@ -1,38 +1,102 @@
 # Backend (Projeto Educacional)
 
-Descrição
-- Aplicação Node.js mínima para demonstrar conexão com PostgreSQL e uso em contêiner Docker.
-- Objetivo educacional: demonstração de infraestrutura com Docker e manipulação de banco de dados.
+## Visão geral
 
-Tecnologias
+Aplicação Node.js simples que expõe um endpoint HTTP e consulta um banco PostgreSQL. A arquitetura segue uma separação básica entre configuração, roteamento, controlador, serviço e repositório.
+
+O objetivo do projeto é educacional: demonstrar como conectar um servidor Node a um banco de dados PostgreSQL e como organizar o código em camadas.
+
+## Tecnologias
+
 - Node.js (ES Modules)
 - PostgreSQL
 - Docker
-- Dependências: `dotenv`, `pg`
+- `dotenv` para variáveis de ambiente
+- `pg` para conexão com o PostgreSQL
 
-Estrutura do repositório
-- `Dockerfile` - imagem Docker para executar a aplicação
-- `index.js` - servidor HTTP e lógica de conexão com o banco
-- `package.json` - metadados do projeto e dependências
-- `db/script.sql` - script SQL para criar tabela `users` e inserir um usuário de exemplo
+## Estrutura de pastas e arquivos
 
-Requisitos
-- Node.js 18+ (imagem usa `node:25-alpine`)
-- PostgreSQL acessível (local ou remoto)
-- `npm` (para instalação local)
-- Docker (opcional, para executar em contêiner)
+```text
+.
+├── .env
+├── Dockerfile
+├── README.md
+├── index.js
+├── package.json
+├── config/
+│   └── database.js
+├── controllers/
+│   └── userController.js
+├── repositories/
+│   └── userRepository.js
+├── routes/
+│   └── api.js
+├── services/
+│   └── userService.js
+├── scripts/
+│   └── script.sql
+└── node_modules/
+```
 
-Variáveis de ambiente (obrigatórias)
-- `PORT` — porta onde o servidor irá escutar (ex: `3000`)
+### Arquivos principais
+
+- `index.js`
+  - Ponto de entrada da aplicação.
+  - Cria o servidor HTTP com `http.createServer(router)`.
+  - Antes de iniciar, verifica a conexão com o banco de dados via `pool.query("SELECT NOW()")`.
+  - Escuta a porta definida em `PORT`.
+
+- `config/database.js`
+  - Configura e exporta um pool de conexões PostgreSQL usando `pg.Pool`.
+  - Carrega variáveis de ambiente com `dotenv.config()`.
+
+- `routes/api.js`
+  - Define o roteamento para requisições HTTP.
+  - Roteia apenas `GET /api` para o controlador `api`.
+  - Retorna `404 Not Found` para outras rotas.
+
+- `controllers/userController.js`
+  - Define a função `api(req, res)` que trata a requisição ao endpoint.
+  - Chama o serviço `getUserInfo()` e formata a resposta JSON.
+  - Retorna erro `500` se houver falha na lógica.
+
+- `services/userService.js`
+  - Contém a lógica de negócio para recuperar informações do usuário.
+  - Invoca `getFirstUser()` do repositório e monta o objeto de resposta.
+  - Retorna os campos:
+    - `database`: sempre `true` quando a consulta ocorre com sucesso
+    - `userAdmin`: `true` quando o primeiro usuário tem `role === "admin"`
+    - `user`: atualmente mapeia `user?.name`, mas o repositório traz `username`
+
+- `repositories/userRepository.js`
+  - Faz a query SQL direta `SELECT * FROM users LIMIT 1`.
+  - Retorna o primeiro registro do usuário.
+
+- `scripts/script.sql`
+  - Cria a tabela `users` com colunas `id`, `username`, `password` e `role`.
+  - Insere um usuário de exemplo com `role = 'admin'`.
+
+## Requisitos
+
+- Node.js 18+ (imagem Docker usa `node:25-alpine`)
+- PostgreSQL acessível
+- `npm` para instalar dependências
+- Docker para executar em contêiner (opcional)
+
+## Variáveis de ambiente
+
+O projeto depende das seguintes variáveis em um arquivo `.env` ou no ambiente:
+
+- `PORT` — porta onde o servidor escuta, ex: `3000`
 - `DB_USER` — usuário do PostgreSQL
 - `DB_PASSWORD` — senha do PostgreSQL
-- `DB_HOST` — host do PostgreSQL (ex: `localhost` ou `db`)
-- `DB_PORT` — porta do PostgreSQL (ex: `5432`)
+- `DB_HOST` — host do PostgreSQL, ex: `localhost` ou `db`
+- `DB_PORT` — porta do PostgreSQL, ex: `5432`
 - `DB_NAME` — nome do banco de dados
 
-Exemplo de arquivo `.env`
+Exemplo de `.env`:
 
-```bash
+```env
 PORT=3000
 DB_USER=postgres
 DB_PASSWORD=your_password
@@ -41,73 +105,58 @@ DB_PORT=5432
 DB_NAME=mydb
 ```
 
-Instalação e execução (local)
+## Execução local
 
 ```bash
-# Instalar dependências
 npm install
-
-# Criar .env com as variáveis acima
-# Executar a aplicação
 node index.js
 ```
 
-Executando com Docker
+## Execução com Docker
 
 ```bash
-# Build da imagem
 docker build -t proj-backend .
-
-# Executar (usando .env local)
 docker run --rm -p 3000:3000 --env-file .env --name proj-backend proj-backend
 ```
 
-Observação: `Dockerfile` expõe a porta 3000. Garanta que `PORT` no `.env` seja `3000` ou ajuste o mapeamento de portas.
+> O `Dockerfile` expõe a porta `3000`. Ajuste `PORT` ou o mapeamento de portas se necessário.
 
-Banco de dados
-- O script SQL `db/script.sql` cria a tabela `users` e insere um usuário de exemplo (`admin`).
-- Para aplicar o script num banco local (usando `psql`):
+## Banco de dados
+
+O script SQL de inicialização está em `scripts/script.sql`.
+
+Para criar a tabela e inserir o usuário de exemplo em um banco local:
 
 ```bash
-psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f db/script.sql
+psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -f scripts/script.sql
 ```
 
-Segurança e recomendações
-- Não mantenha senhas em texto plano em commits. Use variáveis de ambiente ou segredos gerenciados.
-- O `db/script.sql` insere uma senha em texto claro para fins educacionais — altere para usar senhas seguras e hashing (ex: `bcrypt`) em produção.
-- Evite commitar o arquivo `.env`.
+## Endpoint da API
 
-API
-- Endpoint principal: `GET /api`
-- Resposta JSON de exemplo:
+- `GET /api`
+- Resposta esperada:
 
 ```json
 {
   "database": true,
-  "userAdmin": true
+  "userAdmin": true,
+  "user": null
 }
 ```
 
-Explicação rápida
-- Ao acessar `/api` a aplicação tenta conectar ao PostgreSQL e consulta a tabela `users` retornando se houve conexão bem-sucedida e se o primeiro usuário possui `role === "admin"`.
+> Observação: o campo `user` é definido no serviço como `user?.name`, mas a query retorna `username`. Por isso, nesse código atual, ele pode ficar `null`.
 
-Problemas comuns
-- `PORT` não definido → o servidor não inicia. Defina `PORT` em `.env`.
-- Erro de conexão com o Postgres → verifique `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_PORT`, `DB_NAME` e se o banco está acessível.
+## Fluxo de execução
 
-Contribuição
-- Abra issues para bugs e melhorias.
-- Crie PRs para correções e novas funcionalidades.
+1. `index.js` inicia o servidor e confirma a conexão com o banco.
+2. Requisições chegam em `routes/api.js`.
+3. O controlador em `controllers/userController.js` chama o serviço `getUserInfo()`.
+4. O serviço em `services/userService.js` obtém o primeiro usuário via `repositories/userRepository.js`.
+5. O repositório usa o pool do banco exportado por `config/database.js`.
 
-Licença
-- `ISC` (definida em `package.json`)
+## Observações importantes
 
-Autor / Contato
-- Cubos-DevOps
+- Não comite o arquivo `.env` com credenciais reais.
+- O `scripts/script.sql` usa senha de exemplo em texto claro apenas para demonstração.
+- Em produção, recomenda-se hashing de senha e tratamento de erros mais robusto.
 
----
-
-Se quiser, posso:
-- Adicionar um `script` em `package.json` para iniciar a aplicação (`start`).
-- Criar um `.dockerignore` e um `Makefile` com comandos úteis.
-- Atualizar o `db/script.sql` para usar hash de senha.
